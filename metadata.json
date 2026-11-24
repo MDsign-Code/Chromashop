@@ -1,0 +1,6 @@
+{
+  "name": "ChromaStudio Pro",
+  "description": "Studio penyuntingan foto profesional bergaya Photoshop untuk Android & Desktop dengan dukungan layer canggih, file RAW, brush sensitif tekanan stylus, ekspor PSD & cetak, kolaborasi real-time, serta sinkronisasi cloud otomatis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

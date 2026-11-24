@@ -1,0 +1,188 @@
+{
+  "entities": {
+    "UserPreference": {
+      "title": "UserPreference",
+      "description": "Pengaturan workspace, pintasan keyboard kustom, kurva stylus, dan preferensi notifikasi milik pengguna.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "theme": { "type": "string", "enum": ["dark", "light"] },
+        "stylusPressureCurve": { "type": "number" },
+        "autoSaveIntervalSec": { "type": "number" },
+        "notificationsEnabled": { "type": "boolean" },
+        "shortcuts": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "displayName", "theme", "stylusPressureCurve", "autoSaveIntervalSec", "notificationsEnabled", "shortcuts", "createdAt", "updatedAt"]
+    },
+    "StudioProject": {
+      "title": "StudioProject",
+      "description": "Metadata proyek desain Photoshop-style yang tersinkronisasi ke awan.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "dpi": { "type": "number" },
+        "colorProfile": { "type": "string", "enum": ["sRGB", "AdobeRGB", "CMYK-Fogra39", "DisplayP3"] },
+        "roomCode": { "type": "string", "minLength": 4, "maxLength": 32, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "layerCount": { "type": "number" },
+        "thumbnailUrl": { "type": "string", "maxLength": 180000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "title", "width", "height", "dpi", "colorProfile", "roomCode", "layerCount", "thumbnailUrl", "createdAt", "updatedAt"]
+    },
+    "ProjectBackup": {
+      "title": "ProjectBackup",
+      "description": "Snapshot pencadangan otomatis berversi untuk pemulihan proyek.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "projectId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "layerCount": { "type": "number" },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "thumbnailUrl": { "type": "string", "maxLength": 180000 },
+        "snapshotSummary": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "projectId", "label", "layerCount", "width", "height", "thumbnailUrl", "snapshotSummary", "createdAt"]
+    },
+    "ProjectComment": {
+      "title": "ProjectComment",
+      "description": "Komentar pin revisi dan peringatan mendesak pada proyek.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "projectId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "urgent": { "type": "boolean" },
+        "resolved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "projectId", "authorName", "text", "x", "y", "urgent", "resolved", "createdAt", "updatedAt"]
+    },
+    "CustomBrush": {
+      "title": "CustomBrush",
+      "description": "Preset brush kustom dengan parameter sensitivitas tekanan stylus.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "category": { "type": "string", "enum": ["Basic", "Calligraphy", "Texture", "Airbrush", "Custom"] },
+        "size": { "type": "number" },
+        "hardness": { "type": "number" },
+        "opacity": { "type": "number" },
+        "flow": { "type": "number" },
+        "spacing": { "type": "number" },
+        "scatter": { "type": "number" },
+        "angle": { "type": "number" },
+        "roundness": { "type": "number" },
+        "pressureSize": { "type": "boolean" },
+        "pressureOpacity": { "type": "boolean" },
+        "tipType": { "type": "string", "enum": ["round", "chisel", "bristle", "spray", "charcoal"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "category", "size", "hardness", "opacity", "flow", "spacing", "scatter", "angle", "roundness", "pressureSize", "pressureOpacity", "tipType", "createdAt", "updatedAt"]
+    },
+    "AssetItem": {
+      "title": "AssetItem",
+      "description": "Aset desain, foto RAW, tekstur, atau elemen grafis di pustaka aset.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "category": { "type": "string", "enum": ["Photo", "RAW", "Texture", "Overlay", "Template"] },
+        "format": { "type": "string", "minLength": 2, "maxLength": 16 },
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "fileSizeKb": { "type": "number" },
+        "tags": { "type": "array" },
+        "previewUrl": { "type": "string", "maxLength": 180000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "category", "format", "width", "height", "fileSizeKb", "tags", "previewUrl", "createdAt", "updatedAt"]
+    },
+    "CustomPlugin": {
+      "title": "CustomPlugin",
+      "description": "Konfigurasi dan skrip plugin pihak ketiga yang diinstal oleh pengguna.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "author": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "enabled": { "type": "boolean" },
+        "code": { "type": "string", "maxLength": 8000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "version", "author", "description", "enabled", "code", "createdAt", "updatedAt"]
+    },
+    "AnalyticsSession": {
+      "title": "AnalyticsSession",
+      "description": "Catatan sesi produktivitas, durasi pengerjaan, dan statistik alat pengguna.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "projectId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "projectTitle": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "durationSec": { "type": "number" },
+        "strokesCount": { "type": "number" },
+        "layersCreated": { "type": "number" },
+        "exportsCount": { "type": "number" },
+        "activeTool": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "dateKey": { "type": "string", "minLength": 8, "maxLength": 16, "pattern": "^[0-9\\-]+$" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "projectId", "projectTitle", "durationSec", "strokesCount", "layersCreated", "exportsCount", "activeTool", "dateKey", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPreference" },
+      "description": "Preferensi workspace dan pintasan keyboard privat per pengguna."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/StudioProject" },
+      "description": "Daftar proyek desain cloud milik pengguna."
+    },
+    "/projects/{projectId}/backups/{backupId}": {
+      "schema": { "$ref": "#/entities/ProjectBackup" },
+      "description": "Riwayat pencadangan otomatis berversi per proyek."
+    },
+    "/projects/{projectId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/ProjectComment" },
+      "description": "Pin komentar kolaborasi dan notifikasi revisi mendesak."
+    },
+    "/brushes/{brushId}": {
+      "schema": { "$ref": "#/entities/CustomBrush" },
+      "description": "Preset brush kustom sensitif stylus milik pengguna."
+    },
+    "/assets/{assetId}": {
+      "schema": { "$ref": "#/entities/AssetItem" },
+      "description": "Manajemen aset foto, RAW, tekstur, dan template milik pengguna."
+    },
+    "/plugins/{pluginId}": {
+      "schema": { "$ref": "#/entities/CustomPlugin" },
+      "description": "Plugin pihak ketiga & filter kustom yang disimpan pengguna."
+    },
+    "/analytics/{sessionId}": {
+      "schema": { "$ref": "#/entities/AnalyticsSession" },
+      "description": "Log durasi kerja dan analitik produktivitas per sesi."
+    }
+  }
+}

@@ -1,0 +1,324 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isParentProjectOwner(projectId) {
+      return exists(/databases/$(database)/documents/projects/$(projectId))
+        && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+    }
+
+    // --- Entity Validation Blueprints ---
+    function isValidUserPreference(data) {
+      return data.keys().hasAll(['ownerId', 'displayName', 'theme', 'stylusPressureCurve', 'autoSaveIntervalSec', 'notificationsEnabled', 'shortcuts', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'displayName', 'theme', 'stylusPressureCurve', 'autoSaveIntervalSec', 'notificationsEnabled', 'shortcuts', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.theme is string && data.theme in ['dark', 'light']
+        && data.stylusPressureCurve is number && data.stylusPressureCurve >= 0.2 && data.stylusPressureCurve <= 3.0
+        && data.autoSaveIntervalSec is number && data.autoSaveIntervalSec >= 5 && data.autoSaveIntervalSec <= 600
+        && data.notificationsEnabled is bool
+        && data.shortcuts is map && data.shortcuts.size() <= 40
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudioProject(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'width', 'height', 'dpi', 'colorProfile', 'roomCode', 'layerCount', 'thumbnailUrl', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'title', 'width', 'height', 'dpi', 'colorProfile', 'roomCode', 'layerCount', 'thumbnailUrl', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.width is number && data.width >= 64 && data.width <= 8192
+        && data.height is number && data.height >= 64 && data.height <= 8192
+        && data.dpi is number && data.dpi >= 72 && data.dpi <= 600
+        && data.colorProfile is string && data.colorProfile in ['sRGB', 'AdobeRGB', 'CMYK-Fogra39', 'DisplayP3']
+        && data.roomCode is string && data.roomCode.size() >= 4 && data.roomCode.size() <= 32 && data.roomCode.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.layerCount is number && data.layerCount >= 0 && data.layerCount <= 200
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 180000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProjectBackup(data, projectId) {
+      return data.keys().hasAll(['ownerId', 'projectId', 'label', 'layerCount', 'width', 'height', 'thumbnailUrl', 'snapshotSummary', 'createdAt'])
+        && data.keys().hasOnly(['ownerId', 'projectId', 'label', 'layerCount', 'width', 'height', 'thumbnailUrl', 'snapshotSummary', 'createdAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && isValidId(data.projectId)
+        && data.projectId == projectId
+        && data.label is string && data.label.size() >= 1 && data.label.size() <= 120
+        && data.layerCount is number && data.layerCount >= 0 && data.layerCount <= 200
+        && data.width is number && data.width >= 64 && data.width <= 8192
+        && data.height is number && data.height >= 64 && data.height <= 8192
+        && data.thumbnailUrl is string && data.thumbnailUrl.size() <= 180000
+        && data.snapshotSummary is string && data.snapshotSummary.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function isValidProjectComment(data, projectId) {
+      return data.keys().hasAll(['ownerId', 'projectId', 'authorName', 'text', 'x', 'y', 'urgent', 'resolved', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'projectId', 'authorName', 'text', 'x', 'y', 'urgent', 'resolved', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && isValidId(data.projectId)
+        && data.projectId == projectId
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80
+        && data.text is string && data.text.size() >= 1 && data.text.size() <= 600
+        && data.x is number && data.x >= 0 && data.x <= 8192
+        && data.y is number && data.y >= 0 && data.y <= 8192
+        && data.urgent is bool
+        && data.resolved is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomBrush(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'category', 'size', 'hardness', 'opacity', 'flow', 'spacing', 'scatter', 'angle', 'roundness', 'pressureSize', 'pressureOpacity', 'tipType', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'category', 'size', 'hardness', 'opacity', 'flow', 'spacing', 'scatter', 'angle', 'roundness', 'pressureSize', 'pressureOpacity', 'tipType', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.category is string && data.category in ['Basic', 'Calligraphy', 'Texture', 'Airbrush', 'Custom']
+        && data.size is number && data.size >= 1 && data.size <= 500
+        && data.hardness is number && data.hardness >= 0 && data.hardness <= 100
+        && data.opacity is number && data.opacity >= 1 && data.opacity <= 100
+        && data.flow is number && data.flow >= 1 && data.flow <= 100
+        && data.spacing is number && data.spacing >= 1 && data.spacing <= 200
+        && data.scatter is number && data.scatter >= 0 && data.scatter <= 200
+        && data.angle is number && data.angle >= 0 && data.angle <= 360
+        && data.roundness is number && data.roundness >= 10 && data.roundness <= 100
+        && data.pressureSize is bool
+        && data.pressureOpacity is bool
+        && data.tipType is string && data.tipType in ['round', 'chisel', 'bristle', 'spray', 'charcoal']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAssetItem(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'category', 'format', 'width', 'height', 'fileSizeKb', 'tags', 'previewUrl', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'category', 'format', 'width', 'height', 'fileSizeKb', 'tags', 'previewUrl', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.category is string && data.category in ['Photo', 'RAW', 'Texture', 'Overlay', 'Template']
+        && data.format is string && data.format.size() >= 2 && data.format.size() <= 16
+        && data.width is number && data.width >= 1 && data.width <= 16384
+        && data.height is number && data.height >= 1 && data.height <= 16384
+        && data.fileSizeKb is number && data.fileSizeKb >= 0 && data.fileSizeKb <= 512000
+        && data.tags is list && data.tags.size() <= 10 && (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() >= 1 && data.tags[0].size() <= 32))
+        && data.previewUrl is string && data.previewUrl.size() <= 180000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomPlugin(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'version', 'author', 'description', 'enabled', 'code', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'version', 'author', 'description', 'enabled', 'code', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.version is string && data.version.size() >= 1 && data.version.size() <= 24
+        && data.author is string && data.author.size() >= 1 && data.author.size() <= 80
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 300
+        && data.enabled is bool
+        && data.code is string && data.code.size() <= 8000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAnalyticsSession(data) {
+      return data.keys().hasAll(['ownerId', 'projectId', 'projectTitle', 'durationSec', 'strokesCount', 'layersCreated', 'exportsCount', 'activeTool', 'dateKey', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'projectId', 'projectTitle', 'durationSec', 'strokesCount', 'layersCreated', 'exportsCount', 'activeTool', 'dateKey', 'createdAt', 'updatedAt'])
+        && isValidId(data.ownerId)
+        && data.ownerId == request.auth.uid
+        && isValidId(data.projectId)
+        && data.projectTitle is string && data.projectTitle.size() >= 1 && data.projectTitle.size() <= 120
+        && data.durationSec is number && data.durationSec >= 0 && data.durationSec <= 86400
+        && data.strokesCount is number && data.strokesCount >= 0 && data.strokesCount <= 1000000
+        && data.layersCreated is number && data.layersCreated >= 0 && data.layersCreated <= 10000
+        && data.exportsCount is number && data.exportsCount >= 0 && data.exportsCount <= 10000
+        && data.activeTool is string && data.activeTool.size() >= 1 && data.activeTool.size() <= 40
+        && data.dateKey is string && data.dateKey.size() >= 8 && data.dateKey.size() <= 16 && data.dateKey.matches('^[0-9\\-]+$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerified() && isValidId(userId) && isOwner(userId)
+        && isValidUserPreference(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(userId) && isOwner(userId)
+        && isValidUserPreference(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'theme', 'stylusPressureCurve', 'autoSaveIntervalSec', 'notificationsEnabled', 'shortcuts', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(userId) && isOwner(userId);
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified() && isValidId(projectId)
+        && isValidStudioProject(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(projectId) && existing().ownerId == request.auth.uid
+        && isValidStudioProject(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'width', 'height', 'dpi', 'colorProfile', 'layerCount', 'thumbnailUrl', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['roomCode', 'updatedAt'])
+        );
+      allow delete: if isVerified() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+
+      match /backups/{backupId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(backupId)
+          && existing().ownerId == request.auth.uid
+          && isParentProjectOwner(projectId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerified() && isValidId(projectId) && isValidId(backupId)
+          && isValidProjectBackup(incoming(), projectId)
+          && incoming().createdAt == request.time
+          && isParentProjectOwner(projectId);
+        allow update: if false;
+        allow delete: if isVerified() && isValidId(projectId) && isValidId(backupId)
+          && existing().ownerId == request.auth.uid
+          && isParentProjectOwner(projectId);
+      }
+
+      match /comments/{commentId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(commentId)
+          && existing().ownerId == request.auth.uid
+          && isParentProjectOwner(projectId);
+        allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerified() && isValidId(projectId) && isValidId(commentId)
+          && isValidProjectComment(incoming(), projectId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && isParentProjectOwner(projectId);
+        allow update: if isVerified() && isValidId(projectId) && isValidId(commentId)
+          && existing().ownerId == request.auth.uid
+          && isValidProjectComment(incoming(), projectId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().projectId == existing().projectId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['resolved', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['text', 'urgent', 'updatedAt'])
+          )
+          && isParentProjectOwner(projectId);
+        allow delete: if isVerified() && isValidId(projectId) && isValidId(commentId)
+          && existing().ownerId == request.auth.uid
+          && isParentProjectOwner(projectId);
+      }
+    }
+
+    match /brushes/{brushId} {
+      allow get: if isSignedIn() && isValidId(brushId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified() && isValidId(brushId)
+        && isValidCustomBrush(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(brushId) && existing().ownerId == request.auth.uid
+        && isValidCustomBrush(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'size', 'hardness', 'opacity', 'flow', 'spacing', 'scatter', 'angle', 'roundness', 'pressureSize', 'pressureOpacity', 'tipType', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(brushId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /assets/{assetId} {
+      allow get: if isSignedIn() && isValidId(assetId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified() && isValidId(assetId)
+        && isValidAssetItem(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(assetId) && existing().ownerId == request.auth.uid
+        && isValidAssetItem(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'tags', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(assetId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /plugins/{pluginId} {
+      allow get: if isSignedIn() && isValidId(pluginId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified() && isValidId(pluginId)
+        && isValidCustomPlugin(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(pluginId) && existing().ownerId == request.auth.uid
+        && isValidCustomPlugin(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['enabled', 'updatedAt'])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['name', 'version', 'description', 'code', 'enabled', 'updatedAt'])
+        );
+      allow delete: if isVerified() && isValidId(pluginId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /analytics/{sessionId} {
+      allow get: if isSignedIn() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerified() && isValidId(sessionId)
+        && isValidAnalyticsSession(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(sessionId) && existing().ownerId == request.auth.uid
+        && isValidAnalyticsSession(incoming())
+        && incoming().ownerId == existing().ownerId
+        && incoming().projectId == existing().projectId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['durationSec', 'strokesCount', 'layersCreated', 'exportsCount', 'activeTool', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}
